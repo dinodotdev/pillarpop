@@ -5,21 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#07060F">
-  <meta name="description" content="Pillar Pop — endless portrait Pillar-style puzzle with a clean CRT look.">
+  <meta name="description" content="Pillar Pop — endless portrait puzzle. Match gems, chain pops, chase the high score.">
   <title>Pillar Pop</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050814'/%3E%3Ccircle cx='10' cy='10' r='5' fill='%23FF007F'/%3E%3Cpolygon points='22,4 24,10 30,12 24,14 22,20 20,14 14,12 20,10' fill='%2300FFFF'/%3E%3Cpolygon points='10,20 13,26 10,32 7,26' fill='%23FFD700'/%3E%3Cpolygon points='18,22 28,22 30,30 16,30' fill='%2339FF14'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2307060F'/%3E%3Ccircle cx='10' cy='10' r='5' fill='%23FF007F'/%3E%3Cpolygon points='22,4 24,10 30,12 24,14 22,20 20,14 14,12 20,10' fill='%2300FFFF'/%3E%3Cpolygon points='10,20 13,26 10,32 7,26' fill='%23FFD700'/%3E%3Cpolygon points='18,22 28,22 30,30 16,30' fill='%2339FF14'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
+    @property --pulse {
+      syntax: "<number>";
+      inherits: true;
+      initial-value: 0;
+    }
+
     :root {
       --bg: #07060F;
       --bg-top: #0B0914;
       --bg-bot: #05040A;
-      --well: #101018;
-      --led: #07080C;
-      --ink: #111118;
-      --ticket-ink: #1A1020;
+      --ink: #1A1020;
       --white: #E6FFFF;
       --cyan: #00FFFF;
       --magenta: #FF007F;
@@ -31,273 +34,284 @@
 
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
-    html, body { height: 100%; }
+    html {
+      background: var(--bg-bot);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
     body {
       margin: 0;
       min-height: 100%;
       font-family: var(--font);
       background: var(--bg-bot);
       color: var(--white);
-      overflow-x: hidden;
+      letter-spacing: 0.4px;
+      overflow-x: clip;
     }
+    ::selection { background: var(--magenta); color: var(--ink); }
+
+    button, a { font: inherit; color: inherit; }
+    button { appearance: none; -webkit-appearance: none; }
+    a { -webkit-tap-highlight-color: transparent; }
 
     .stage {
       position: relative;
-      min-height: 100%;
       min-height: 100dvh;
-      display: flex;
-      justify-content: center;
-      padding: max(12px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
-    }
-
-    .shaft {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 46%, var(--bg-bot) 100%);
-      overflow: hidden;
-    }
-
-    .glow-cyan, .glow-magenta {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(36px);
-      pointer-events: none;
-    }
-    .glow-cyan {
-      width: min(84vw, 420px);
-      height: min(84vw, 420px);
-      left: 50%;
-      top: 14%;
-      transform: translate(-50%, -20%);
-      background: rgba(0, 255, 255, 0.11);
-      animation: pulse-glow 2.4s ease-in-out infinite;
-    }
-    .glow-magenta {
-      width: min(70vw, 340px);
-      height: min(70vw, 340px);
-      right: -8%;
-      bottom: 6%;
-      background: rgba(255, 0, 127, 0.08);
-    }
-
-    .well-shaft {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 18%;
-      bottom: 0;
-      clip-path: polygon(22% 0, 78% 0, 92% 100%, 8% 100%);
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent calc(16.66% - 1px),
-          rgba(0, 255, 255, 0.1) calc(16.66% - 1px),
-          rgba(0, 255, 255, 0.1) 16.66%
-        ),
-        rgba(0, 255, 255, 0.08);
-      pointer-events: none;
-    }
-
-    .star {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: var(--mustard);
-      clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-      opacity: 0.7;
-      animation: bob 6.4s ease-in-out infinite;
-    }
-    .star.cyan { background: var(--cyan); }
-    .star.a { top: 86px; left: 28px; }
-    .star.b { top: 118px; right: 26px; width: 8px; height: 8px; animation-direction: reverse; }
-
-    .sky {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .sky-gem {
-      position: absolute;
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      pointer-events: auto;
-      cursor: pointer;
-      animation: bob 6.4s ease-in-out infinite;
-      filter: drop-shadow(0 0 8px color-mix(in srgb, var(--gem, #fff) 55%, transparent));
-    }
-    .sky-gem.popped {
-      animation: none;
-      transform: scale(0);
-      pointer-events: none;
-      transition: transform 180ms ease;
-    }
-    .sky-gem[data-i="1"] { left: 8%; top: 18%; --gem: var(--magenta); animation-delay: -0.8s; }
-    .sky-gem[data-i="2"] { right: 7%; top: 22%; --gem: var(--cyan); animation-delay: -3s; }
-    .sky-gem[data-i="4"] { left: 5%; top: 34%; --gem: var(--green); animation-delay: -4.5s; }
-    .sky-gem[data-i="5"] { right: 4%; top: 32%; --gem: var(--violet); animation-delay: -2.1s; }
-
-    .cabinet {
-      position: relative;
-      z-index: 2;
-      width: min(420px, 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      padding:
+        max(20px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(24px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
     }
 
-    button {
-      font: inherit;
-      color: inherit;
-      appearance: none;
-      -webkit-appearance: none;
+    .field, .scan, .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .field {
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 46%, var(--bg-bot) 100%);
+      overflow: hidden;
+    }
+    .glow {
+      position: absolute;
+      width: min(88vw, 480px);
+      height: min(88vw, 480px);
+      left: 50%;
+      top: 16%;
+      border-radius: 50%;
+      transform: translate(-50%, -46%);
+      background: rgba(0, 255, 255, 0.1);
+      filter: blur(40px);
+      animation: glow 2s ease-in-out infinite;
+    }
+    .shaft {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .scan {
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.05) 0 1px,
+        transparent 1px 3px
+      );
+    }
+    .vignette {
+      background: radial-gradient(ellipse at 50% 28%, transparent 46%, rgba(0, 0, 0, 0.28) 100%);
+    }
+
+    .cabinet {
+      position: relative;
+      z-index: 1;
+      width: min(420px, 100%);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .spacer { flex: 1 1 28px; }
+
+    .hero, .cta, .how, .foot {
+      animation: arrive 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .cta { animation-delay: 70ms; }
+    .how { animation-delay: 120ms; }
+    .foot { animation-delay: 160ms; }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      width: 100%;
     }
 
     .title {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding-top: 18px;
+      gap: 12px;
+      margin: 0;
+      animation: breathe 2s ease-in-out infinite;
     }
     .word {
+      --shift: 2.7px;
       position: relative;
-      font-size: clamp(22px, 8vw, 26px);
-      letter-spacing: 0.4px;
+      font-size: clamp(24px, 7.4vw, 30px);
       line-height: 1.25;
+      font-weight: 400;
+    }
+    .pop .word {
+      --shift: 3.6px;
+      font-size: clamp(34px, 10.4vw, 40px);
+      --fill: var(--mustard);
     }
     .word .back {
       position: absolute;
-      left: calc(2.6px + var(--pulse, 0px));
-      top: calc(2.6px + var(--pulse, 0px));
+      left: calc(var(--shift) + var(--pulse, 0) * 1.1px);
+      top: calc(var(--shift) + var(--pulse, 0) * 1.1px);
       color: var(--magenta);
     }
     .word .front { position: relative; color: var(--fill, var(--cyan)); }
     .pop {
       display: flex;
       align-items: flex-end;
-      gap: 2px;
+      gap: 3px;
     }
-    .pop .word { font-size: clamp(28px, 10vw, 34px); --fill: var(--mustard); }
 
     .title-well {
-      width: 40px;
-      height: 46px;
-      margin: 0 2px 1px;
+      width: 48px;
+      height: 58px;
+      margin: 0 0 2px;
+      padding: 0;
+      border: 0;
+      background: transparent;
       cursor: pointer;
     }
     .title-well svg { display: block; width: 100%; height: 100%; }
+    .title-well .ring { opacity: calc(0.85 + var(--pulse, 0) * 0.15); }
 
-    .ticket {
-      transform: rotate(-2deg);
-      background: var(--mustard);
-      color: var(--ticket-ink);
-      padding: 7px 12px 8px;
-      box-shadow: 3px 3px 0 var(--magenta);
-      text-align: center;
-      cursor: default;
-    }
-    .ticket small {
-      display: block;
-      color: color-mix(in srgb, var(--ticket-ink) 70%, transparent);
-      font-size: 6px;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-    .ticket b {
-      display: block;
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: 0.4px;
-    }
-
-    .blurb {
-      max-width: 20em;
+    .kicker {
+      margin: 0;
       text-align: center;
       font-size: 8px;
-      line-height: 1.7;
-      color: color-mix(in srgb, var(--white) 82%, transparent);
+      line-height: 1.9;
+      white-space: nowrap;
+      color: color-mix(in srgb, var(--white) 68%, transparent);
     }
 
     .cta {
       width: 100%;
+      margin-top: 32px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
-    .play {
-      display: block;
-      width: 100%;
-      padding: 10px 12px 12px;
-      border: 2px solid #fff;
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 196px;
+      padding: 18px 18px 16px;
       text-decoration: none;
       color: var(--ink);
       background: var(--fill);
-      box-shadow: 4px 4px 0 var(--shadow), 0 0 8px color-mix(in srgb, var(--fill) 28%, transparent);
+      border: 3px solid #fff;
+      box-shadow: 5px 5px 0 var(--shadow);
+      transition: transform 70ms linear, box-shadow 70ms linear, filter 70ms linear;
     }
-    .play:hover { filter: brightness(1.06); }
-    .play:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shadow); }
-    .play.android { --fill: var(--cyan); --shadow: var(--magenta); }
-    .play.ios { --fill: var(--magenta); --shadow: var(--mustard); }
-    .play .pool {
-      height: 48px;
-      background: var(--well);
-      border: 1px solid #2A2030;
+    .card.android {
+      --fill: var(--cyan);
+      --shadow: var(--magenta);
+    }
+    .card.ios {
+      --fill: var(--magenta);
+      --shadow: var(--mustard);
+    }
+    .card.featured {
+      animation: card-glow 2s ease-in-out infinite;
+    }
+    .card:active,
+    .card.featured:active {
+      animation: none;
+      transform: translate(3px, 3px);
+      box-shadow: 2px 2px 0 var(--shadow);
+    }
+    @media (hover: hover) {
+      .card:hover { filter: brightness(1.04); }
+    }
+    .card:focus-visible,
+    .title-well:focus-visible {
+      outline: 2px solid var(--mustard);
+      outline-offset: 4px;
+    }
+
+    .top, .bar {
+      display: flex;
+      align-items: center;
+    }
+    .top {
+      gap: 8px;
+      min-height: 18px;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .lamps { display: inline-flex; gap: 5px; }
+    .lamps i {
+      width: 9px;
+      height: 9px;
+      background: color-mix(in srgb, var(--c) 72%, #1a1020);
+      border: 1px solid var(--c);
+      box-shadow: 0 0 6px var(--c);
+      animation: lamp 2s ease-in-out infinite;
+    }
+    .lamps i:nth-child(1) { --c: var(--cyan); }
+    .lamps i:nth-child(2) { --c: var(--mustard); animation-delay: -0.35s; }
+    .lamps i:nth-child(3) { --c: var(--magenta); animation-delay: -0.7s; }
+    .card.ios .lamps i:nth-child(1) { --c: var(--mustard); }
+    .card.ios .lamps i:nth-child(2) { --c: var(--magenta); }
+    .card.ios .lamps i:nth-child(3) { --c: var(--cyan); }
+
+    .pool {
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: clamp(10px, 3vw, 18px);
+      min-height: 88px;
     }
-    .play .pool .g {
-      width: 28px;
-      height: 28px;
+    .g {
+      width: clamp(34px, 10vw, 46px);
+      height: clamp(34px, 10vw, 46px);
+      flex: none;
       animation: bob 6.4s ease-in-out infinite;
     }
-    .play .pool .g:nth-child(2) { animation-delay: -1.1s; }
-    .play .pool .g:nth-child(3) { animation-delay: -2.2s; }
-    .play .pool .g:nth-child(4) { animation-delay: -3.3s; }
-    .play .pool .g:nth-child(5) { animation-delay: -4.4s; }
-    .play .label {
-      display: block;
-      text-align: center;
-      font-size: 14px;
-      letter-spacing: 0.4px;
+    .g svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+    .bar { justify-content: space-between; gap: 12px; }
+    .meta {
+      font-size: 7px;
+      line-height: 1.25;
+      opacity: 0.7;
     }
+    .get {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      line-height: 1;
+    }
+    .get svg { display: block; fill: currentColor; }
 
     .how {
       width: 100%;
-      background: var(--led);
-      border: 1.4px solid color-mix(in srgb, var(--cyan) 55%, transparent);
-      border-radius: 6px;
-      box-shadow: 3px 3px 0 color-mix(in srgb, var(--cyan) 18%, transparent);
-      padding: 12px 12px 14px;
-      color: var(--cyan);
-      font-size: 7px;
+      margin: 36px 0 0;
+      text-align: center;
+      font-size: 8px;
       line-height: 1.8;
-      letter-spacing: 0.4px;
+      color: color-mix(in srgb, var(--white) 84%, transparent);
     }
-    .how h2 {
-      margin: 0 0 8px;
-      font-size: 7px;
-      font-weight: 400;
-      color: color-mix(in srgb, var(--cyan) 70%, transparent);
-    }
-    .how p { margin: 0; color: var(--white); }
-    .how span { color: var(--mustard); }
+    .how p { margin: 0 0 16px; }
+    .how p:last-child { margin-bottom: 0; }
+    .how b { font-weight: 400; }
+    .c { color: var(--cyan); }
+    .y { color: var(--mustard); }
+    .m { color: var(--magenta); }
 
     .foot {
-      font-size: 6px;
-      line-height: 1.8;
-      letter-spacing: 0.4px;
-      color: color-mix(in srgb, var(--white) 45%, transparent);
+      margin: 28px 0 0;
       text-align: center;
+      font-size: 6px;
+      line-height: 2;
+      color: color-mix(in srgb, var(--white) 42%, transparent);
     }
-    .foot a { color: var(--cyan); text-decoration: none; }
+    .foot span { color: color-mix(in srgb, var(--white) 28%, transparent); }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -306,136 +320,161 @@
       clip: rect(0, 0, 0, 0);
     }
 
-    .scan, .vignette {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 8;
+    @keyframes breathe {
+      0%, 100% { --pulse: 0; }
+      50% { --pulse: 1; }
     }
-    .scan {
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.10) 0,
-        rgba(0, 0, 0, 0.10) 1px,
-        transparent 1px,
-        transparent 3px
-      );
+    @keyframes glow {
+      0%, 100% { opacity: 0.72; }
+      50% { opacity: 1; }
     }
-    .vignette {
-      background: radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.8) 100%);
+    @keyframes card-glow {
+      0%, 100% { box-shadow: 5px 5px 0 var(--shadow), 0 0 14px rgba(0, 255, 255, 0.28); }
+      50% { box-shadow: 5px 5px 0 var(--shadow), 0 0 26px rgba(0, 255, 255, 0.48); }
     }
-
+    @keyframes lamp {
+      0%, 100% { filter: brightness(0.72); }
+      50% { filter: brightness(1.15); }
+    }
     @keyframes bob {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.65; }
-    }
-    .drop-gem {
-      animation: drop 1.35s cubic-bezier(.55, .06, .68, .19) infinite;
+      50% { transform: translateY(-6px); }
     }
     @keyframes drop {
-      0% { transform: translateY(-28px); }
-      100% { transform: translateY(40px); }
+      0% { transform: translateY(-28px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+      26% { transform: translateY(5px); }
+      74% { transform: translateY(5px); animation-timing-function: cubic-bezier(0.55, 0.06, 0.68, 0.19); }
+      100% { transform: translateY(70px); }
+    }
+    .drop-gem { animation: drop 4.4s infinite; }
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .sky-gem, .star, .play .pool .g, .glow-cyan { animation: none; }
-      .drop-gem { animation: none !important; transform: translate(-50%, 6px); }
+      .hero, .cta, .how, .foot,
+      .title, .glow, .card.featured, .lamps i, .g, .drop-gem {
+        animation: none;
+      }
+      .drop-gem { transform: translateY(5px); }
     }
   </style>
 </head>
 <body>
   <div class="stage">
-    <div class="shaft" aria-hidden="true">
-      <div class="glow-cyan"></div>
-      <div class="glow-magenta"></div>
-      <div class="well-shaft"></div>
-      <span class="star a"></span>
-      <span class="star b cyan"></span>
+    <div class="field" aria-hidden="true">
+      <div class="glow"></div>
+      <svg class="shaft" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polygon points="22,18 78,18 92,100 8,100" fill="#00FFFF" fill-opacity="0.03"/>
+        <g fill="none" stroke="#00FFFF" stroke-width="1" vector-effect="non-scaling-stroke">
+          <g stroke-opacity="0.16">
+            <line x1="22" y1="18" x2="8" y2="100"/>
+            <line x1="78" y1="18" x2="92" y2="100"/>
+          </g>
+          <g stroke-opacity="0.05">
+            <line x1="19.67" y1="31.67" x2="80.33" y2="31.67"/>
+            <line x1="17.33" y1="45.33" x2="82.67" y2="45.33"/>
+            <line x1="15" y1="59" x2="85" y2="59"/>
+            <line x1="12.67" y1="72.67" x2="87.33" y2="72.67"/>
+            <line x1="10.33" y1="86.33" x2="89.67" y2="86.33"/>
+          </g>
+        </g>
+      </svg>
     </div>
-
-    <div class="sky" id="sky" aria-hidden="true"></div>
+    <div class="scan" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
 
     <main class="cabinet">
-      <h1 class="title">
-        <span class="word" style="--fill:var(--cyan)">
-          <span class="back" aria-hidden="true">PILLAR</span>
-          <span class="front">PILLAR</span>
-        </span>
-        <span class="pop" aria-label="Pop">
-          <span class="word">
-            <span class="back" aria-hidden="true">P</span>
-            <span class="front">P</span>
-          </span>
-          <span class="sr-only">O</span>
-          <span class="title-well" id="mascot" title="Cycle gem" role="button" tabindex="0" aria-label="Cycle gem">
-            <svg viewBox="0 0 40 46">
-              <ellipse cx="20" cy="19" rx="20" ry="19" fill="#FF007F"/>
-              <ellipse cx="20" cy="19" rx="18.2" ry="17.2" fill="#00FFFF"/>
-              <ellipse cx="20" cy="19" rx="17.2" ry="16.2" fill="#07060F"/>
-              <clipPath id="hole"><ellipse cx="20" cy="19" rx="17.2" ry="16.2"/></clipPath>
-              <g clip-path="url(#hole)">
-                <g id="drop" class="drop-gem">
-                  <g id="drop-shape" transform="translate(4,0) scale(1)"></g>
-                </g>
-              </g>
-              <ellipse cx="20" cy="19" rx="17.2" ry="16.2" fill="none" stroke="#fff" stroke-width="2" opacity="0.9"/>
-            </svg>
-          </span>
-          <span class="word">
-            <span class="back" aria-hidden="true">P</span>
-            <span class="front">P</span>
-          </span>
-        </span>
-      </h1>
+      <div class="spacer"></div>
 
-      <div class="ticket">
-        <small>NOW AVAILABLE</small>
-        <b>ON YOUR PHONE</b>
-      </div>
+      <header class="hero">
+        <h1 class="title">
+          <span class="word">
+            <span class="back" aria-hidden="true">PILLAR</span>
+            <span class="front">PILLAR</span>
+          </span>
+          <span class="pop">
+            <span class="word">
+              <span class="back" aria-hidden="true">P</span>
+              <span class="front">P</span>
+            </span>
+            <span class="sr-only">O</span>
+            <button class="title-well" id="mascot" type="button" aria-label="Cycle gem">
+              <svg viewBox="0 0 48 58">
+                <ellipse cx="24" cy="24.36" rx="23.64" ry="23.88" fill="#FF007F"/>
+                <ellipse cx="24" cy="24.36" rx="21.84" ry="22.08" fill="#00FFFF"/>
+                <ellipse cx="24" cy="24.36" rx="20.64" ry="20.88" fill="#07060F"/>
+                <clipPath id="hole">
+                  <ellipse cx="24" cy="24.36" rx="20.64" ry="20.88"/>
+                </clipPath>
+                <g clip-path="url(#hole)">
+                  <g id="drop" class="drop-gem">
+                    <g id="drop-shape" transform="translate(11.52 0) scale(0.78)"></g>
+                  </g>
+                </g>
+                <ellipse class="ring" cx="24" cy="24.36" rx="20.64" ry="20.88" fill="none" stroke="#fff" stroke-width="2"/>
+              </svg>
+            </button>
+            <span class="word">
+              <span class="back" aria-hidden="true">P</span>
+              <span class="front">P</span>
+            </span>
+          </span>
+        </h1>
+        <p class="kicker">Endless portrait puzzle</p>
+      </header>
 
       <div class="cta">
-        <a class="play android" id="btn-android" href="https://play.google.com/store/apps/details?id=com.dinodotdev.pillarpop">
+        <a class="card android featured" id="btn-android" href="https://play.google.com/store/apps/details?id=com.dinodotdev.pillarpop">
+          <div class="top">
+            <span class="lamps" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>ANDROID</span>
+          </div>
           <div class="pool" id="pool-android"></div>
-          <span class="label">GET ON ANDROID</span>
+          <div class="bar">
+            <span class="meta">PLAY STORE</span>
+            <span class="get">GET
+              <svg viewBox="0 0 9 11" width="9" height="11" aria-hidden="true"><path d="M0 0 L9 5.5 L0 11 Z"/></svg>
+            </span>
+          </div>
         </a>
-        <a class="play ios" id="btn-ios" hidden href="#">
+        <a class="card ios" id="btn-ios" hidden href="#">
+          <div class="top">
+            <span class="lamps" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>iOS</span>
+          </div>
           <div class="pool" id="pool-ios"></div>
-          <span class="label">GET ON iOS</span>
+          <div class="bar">
+            <span class="meta">APP STORE</span>
+            <span class="get">GET
+              <svg viewBox="0 0 9 11" width="9" height="11" aria-hidden="true"><path d="M0 0 L9 5.5 L0 11 Z"/></svg>
+            </span>
+          </div>
         </a>
       </div>
 
-      <p class="blurb">Endless portrait Pillar-style puzzle. Match gems. Chain pops. Chase the high score.</p>
-
-      <section class="how" id="how">
-        <h2>HOW TO PLAY</h2>
-        <p><span>TAP</span> to cycle the stack.</p>
-        <p><span>SLIDE</span> to move the Pillar</p>
-        <p><span>SLAM</span> to drop. Match 3+ to pop. Chains score bigger.</p>
+      <section class="how" aria-label="How to play">
+        <p><b class="c">TAP</b> to cycle the stack.</p>
+        <p><b class="y">SLIDE</b> to move the pillar.</p>
+        <p><b class="m">SLAM</b> to drop. Match 3 or more.</p>
       </section>
 
-      <p class="foot">Android 7.0+ · Offline · Puzzle<br>Press Start 2P by CodeMan38 · SIL OFL 1.1</p>
-    </main>
+      <p class="foot">
+        Android 7.0+ · Offline · Puzzle<br>
+        <span>Press Start 2P by CodeMan38 · SIL OFL 1.1</span>
+      </p>
 
-    <div class="scan"></div>
-    <div class="vignette"></div>
+      <div class="spacer"></div>
+    </main>
   </div>
 
-  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-    <defs>
-      <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
-        <stop offset="0.45" stop-color="#fff" stop-opacity="0"/>
-        <stop offset="1" stop-color="#000" stop-opacity="0.28"/>
-      </linearGradient>
-    </defs>
+  <svg id="gem-defs" width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs></defs>
   </svg>
 
   <script>
-    /* Paste an App Store URL to show the iOS button. */
+    /* Paste an App Store URL to show the iOS card. */
     const STORES = {
       android: "https://play.google.com/store/apps/details?id=com.dinodotdev.pillarpop",
       ios: ""
@@ -443,94 +482,129 @@
 
     const COLORS = ["#FF007F", "#00FFFF", "#FFD700", "#39FF14", "#B026FF"];
 
-    function gemShape(id) {
-      const shapes = {
-        1: '<circle cx="16" cy="16" r="12"/>',
-        2: '<polygon points="16,2 19.4,13 30,16 19.4,19 16,30 12.6,19 2,16 12.6,13"/>',
-        3: '<polygon points="16,2 22.5,16 16,30 9.5,16"/>',
-        4: '<polygon points="7,4 25,4 30,28 2,28"/>',
-        5: '<path fill-rule="evenodd" d="M16 4a12 12 0 1 0 0 24 12 12 0 1 0 0-24zm5.5 5.5a9.5 9.5 0 1 0 0 13 9.5 9.5 0 1 0 0-13z"/>'
-      };
-      return shapes[id] || shapes[1];
+    function mix(hex, target, t) {
+      const parse = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+      const a = parse(hex);
+      const b = parse(target);
+      return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, "0")).join("");
     }
 
-    function gemMarkup(id, size) {
-      const c = COLORS[(id - 1) % 5];
-      const s = size || 32;
-      const body = gemShape(id);
+    function shape(id) {
+      const top = 2.56;
+      const bottom = 29.44;
+      const left = 2.56;
+      const right = 29.44;
+      const w = 26.88;
+      const cx = 16;
+      const cy = 16;
+      const radius = 13.44;
+      if (id === 1) {
+        return '<circle cx="16" cy="16" r="13.44"/>';
+      }
+      if (id === 2) {
+        const pts = [];
+        for (let i = 0; i < 8; i++) {
+          const r = i % 2 === 0 ? radius : radius * 0.34;
+          const a = (i * Math.PI) / 4 - Math.PI / 2;
+          pts.push((cx + Math.cos(a) * r).toFixed(2) + "," + (cy + Math.sin(a) * r).toFixed(2));
+        }
+        return '<polygon points="' + pts.join(" ") + '"/>';
+      }
+      if (id === 3) {
+        return '<polygon points="16,' + top + " " + (cx + w * 0.22).toFixed(2) + "," + cy + " 16," + bottom + " " + (cx - w * 0.22).toFixed(2) + "," + cy + '"/>';
+      }
+      if (id === 4) {
+        const inset = w * 0.16;
+        return '<polygon points="' + (left + inset).toFixed(2) + "," + top + " " + (right - inset).toFixed(2) + "," + top + " " + right + "," + bottom + " " + left + "," + bottom + '"/>';
+      }
+      const holeR = radius * 0.78;
+      const holeCx = cx + radius * 0.38;
+      const outer = "M" + (cx - radius) + " " + cy + " a" + radius + " " + radius + " 0 1 0 " + radius * 2 + " 0 a" + radius + " " + radius + " 0 1 0 -" + radius * 2 + " 0 z";
+      const inner = "M" + (holeCx - holeR).toFixed(2) + " " + cy + " a" + holeR.toFixed(2) + " " + holeR.toFixed(2) + " 0 1 1 " + (holeR * 2).toFixed(2) + " 0 a" + holeR.toFixed(2) + " " + holeR.toFixed(2) + " 0 1 1 -" + (holeR * 2).toFixed(2) + " 0 z";
+      return '<path fill-rule="evenodd" d="' + outer + " " + inner + '"/>';
+    }
+
+    function shine() {
+      return '<rect x="6.32" y="5.79" width="11.29" height="5.38" rx="2.69" fill="#fff" fill-opacity="0.3"/>';
+    }
+
+    function gemBody(id, outline) {
+      const body = shape(id);
+      const stroke = mix(COLORS[id - 1], "#ffffff", 0.4);
+      const rim = outline
+        ? '<g fill="none" stroke="#1A1020" stroke-width="3" stroke-linejoin="round">' + body + "</g>"
+        : "";
       return (
-        '<svg viewBox="0 0 32 32" width="' + s + '" height="' + s + '" aria-hidden="true">' +
-          '<g fill="' + c + '" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">' + body + "</g>" +
-          '<g fill="url(#shine)">' + body + "</g>" +
-        "</svg>"
+        rim +
+        '<g fill="url(#gem-' + id + ')" stroke="' + stroke + '" stroke-width="1.6" stroke-linejoin="round">' + body + "</g>" +
+        (id === 1 ? shine() : "")
       );
     }
 
-    function gemInner(id) {
-      const c = COLORS[(id - 1) % 5];
-      const body = gemShape(id);
-      return '<g fill="' + c + '" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">' + body + "</g>";
+    function gemMarkup(id) {
+      return '<svg viewBox="0 0 32 32" aria-hidden="true">' + gemBody(id, true) + "</svg>";
+    }
+
+    function installGradients() {
+      const defs = document.querySelector("#gem-defs defs");
+      const NS = "http://www.w3.org/2000/svg";
+      COLORS.forEach(function (c, index) {
+        const g = document.createElementNS(NS, "linearGradient");
+        g.id = "gem-" + (index + 1);
+        g.setAttribute("gradientUnits", "userSpaceOnUse");
+        g.setAttribute("x1", "2.56");
+        g.setAttribute("y1", "2.56");
+        g.setAttribute("x2", "29.44");
+        g.setAttribute("y2", "29.44");
+        [
+          ["0", mix(c, "#ffffff", 0.28)],
+          ["0.45", c],
+          ["1", mix(c, "#000000", 0.28)]
+        ].forEach(function (stop) {
+          const node = document.createElementNS(NS, "stop");
+          node.setAttribute("offset", stop[0]);
+          node.setAttribute("stop-color", stop[1]);
+          g.appendChild(node);
+        });
+        defs.appendChild(g);
+      });
     }
 
     function fillPool(el, count) {
-      el.innerHTML = "";
+      el.replaceChildren();
       for (let i = 1; i <= count; i++) {
         const wrap = document.createElement("span");
         wrap.className = "g";
-        wrap.innerHTML = gemMarkup(i, 28);
+        wrap.style.animationDelay = -(i - 1) * 1.088 + "s";
+        wrap.innerHTML = gemMarkup(i);
         el.appendChild(wrap);
       }
     }
 
+    installGradients();
     fillPool(document.getElementById("pool-android"), 5);
 
     const iosBtn = document.getElementById("btn-ios");
     if (STORES.ios) {
       iosBtn.hidden = false;
       iosBtn.href = STORES.ios;
-      fillPool(document.getElementById("pool-ios"), 4);
+      fillPool(document.getElementById("pool-ios"), 5);
     }
     document.getElementById("btn-android").href = STORES.android;
 
     let mascot = 3;
     const dropShape = document.getElementById("drop-shape");
+    const drop = document.getElementById("drop");
     function paintMascot() {
-      dropShape.innerHTML = gemInner(mascot);
+      dropShape.innerHTML = gemBody(mascot, false);
     }
     paintMascot();
     function cycleMascot() {
       mascot = (mascot % 5) + 1;
       paintMascot();
     }
-    const well = document.getElementById("mascot");
-    well.addEventListener("click", cycleMascot);
-    well.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        cycleMascot();
-      }
-    });
-
-    const sky = document.getElementById("sky");
-    const skyIds = [1, 2, 4, 5];
-    function seedSky() {
-      sky.innerHTML = "";
-      skyIds.forEach(function (id) {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.className = "sky-gem";
-        el.dataset.i = String(id);
-        el.innerHTML = gemMarkup(id, 36);
-        el.addEventListener("click", function () {
-          el.classList.add("popped");
-          if ([].every.call(sky.children, function (n) { return n.classList.contains("popped"); })) {
-            setTimeout(seedSky, 700);
-          }
-        });
-        sky.appendChild(el);
-      });
-    }
-    seedSky();
+    document.getElementById("mascot").addEventListener("click", cycleMascot);
+    drop.addEventListener("animationiteration", cycleMascot);
   </script>
 </body>
 </html>
